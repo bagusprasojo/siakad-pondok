@@ -1,0 +1,434 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Data: {{ santri.nama_lengkap }} - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6" x-data="{
+    step: 1,
+    totalSteps: 5,
+    statusAyah: '{{ santri.status_ayah|default:"hidup" }}',
+    alamatAyahSama: {% if santri.alamat_ayah_sama %}true{% else %}false{% endif %},
+    statusIbu: '{{ santri.status_ibu|default:"hidup" }}',
+    alamatIbuSama: {% if santri.alamat_ibu_sama %}true{% else %}false{% endif %},
+    hubunganWali: '{{ santri.hubungan_wali|default:"sama_ayah" }}',
+    alamatWaliSama: {% if santri.alamat_wali_sama %}true{% else %}false{% endif %},
+    setStep(s) { if(s >= 1 && s <= this.totalSteps) this.step = s; }
+}">
+
+    <!-- Header & Breadcrumb -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'santri:santri-detail' santri.uuid %}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Kembali ke Profil Santri
+        </a>
+        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Edit: {{ santri.nama_lengkap }} (NIS: {{ santri.nis }})
+        </span>
+    </div>
+
+    <!-- Stepper Indicator -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-semibold">
+            <button type="button" @click="setStep(1)" :class="step === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'" class="p-2.5 rounded-xl transition flex flex-col items-center gap-1">
+                <span class="font-bold">1. Santri</span>
+                <span class="text-[10px] opacity-80">Identitas Pribadi</span>
+            </button>
+            <button type="button" @click="setStep(2)" :class="step === 2 ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'" class="p-2.5 rounded-xl transition flex flex-col items-center gap-1">
+                <span class="font-bold">2. Alamat</span>
+                <span class="text-[10px] opacity-80">Domisili Santri</span>
+            </button>
+            <button type="button" @click="setStep(3)" :class="step === 3 ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'" class="p-2.5 rounded-xl transition flex flex-col items-center gap-1">
+                <span class="font-bold">3. Ayah</span>
+                <span class="text-[10px] opacity-80">Data Ayah Kandung</span>
+            </button>
+            <button type="button" @click="setStep(4)" :class="step === 4 ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'" class="p-2.5 rounded-xl transition flex flex-col items-center gap-1">
+                <span class="font-bold">4. Ibu</span>
+                <span class="text-[10px] opacity-80">Data Ibu Kandung</span>
+            </button>
+            <button type="button" @click="setStep(5)" :class="step === 5 ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'" class="p-2.5 rounded-xl transition flex flex-col items-center gap-1">
+                <span class="font-bold">5. Wali</span>
+                <span class="text-[10px] opacity-80">Wali & Darurat</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Form Container -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 sm:p-8">
+        <form method="POST" id="form-santri-edit" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- ================= STEP 1: IDENTITAS SANTRI ================= -->
+            <div x-show="step === 1" class="space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">1. Identitas Pokok Santri</h3>
+                        <p class="text-xs text-slate-500">Nomor induk, nama lengkap, dan data kependudukan santri.</p>
+                    </div>
+                    <div>
+                        <span class="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-lg">NIS: {{ santri.nis }}</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Status Keaktifan</label>
+                        <select name="status" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            {% for val, label in status_choices %}
+                                <option value="{{ val }}" {% if santri.status == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">NISN</label>
+                        <input type="text" name="nisn" value="{{ santri.nisn|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">NIK Santri</label>
+                        <input type="text" name="nik" value="{{ santri.nik|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Lengkap Santri *</label>
+                        <input type="text" name="nama_lengkap" value="{{ santri.nama_lengkap }}" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Panggilan</label>
+                        <input type="text" name="panggilan" value="{{ santri.panggilan|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Jenis Kelamin</label>
+                        <select name="jenis_kelamin" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="L" {% if santri.jenis_kelamin == 'L' %}selected{% endif %}>Laki-laki (Putra)</option>
+                            <option value="P" {% if santri.jenis_kelamin == 'P' %}selected{% endif %}>Perempuan (Putri)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tempat Lahir</label>
+                        <input type="text" name="tempat_lahir" value="{{ santri.tempat_lahir|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Lahir</label>
+                        <input type="date" name="tanggal_lahir" value="{{ santri.tanggal_lahir|date:'Y-m-d'|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Golongan Darah</label>
+                        <select name="golongan_darah" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="-" {% if santri.golongan_darah == '-' %}selected{% endif %}>Tidak Tahu</option>
+                            <option value="A" {% if santri.golongan_darah == 'A' %}selected{% endif %}>A</option>
+                            <option value="B" {% if santri.golongan_darah == 'B' %}selected{% endif %}>B</option>
+                            <option value="AB" {% if santri.golongan_darah == 'AB' %}selected{% endif %}>AB</option>
+                            <option value="O" {% if santri.golongan_darah == 'O' %}selected{% endif %}>O</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">No. Kartu Keluarga (KK)</label>
+                        <input type="text" name="no_kk" value="{{ santri.no_kk|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Anak ke-</label>
+                        <input type="number" name="anak_ke" value="{{ santri.anak_ke|default:1 }}" min="1" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Dari Jumlah Saudara</label>
+                        <input type="number" name="jumlah_saudara" value="{{ santri.jumlah_saudara|default:1 }}" min="1" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Riwayat Penyakit / Alergi</label>
+                    <input type="text" name="riwayat_penyakit" value="{{ santri.riwayat_penyakit|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+
+            <!-- ================= STEP 2: ALAMAT SANTRI ================= -->
+            <div x-show="step === 2" x-cloak class="space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900">2. Alamat Tinggal / Asal Santri</h3>
+                    <p class="text-xs text-slate-500">Alamat domisili rumah asal santri.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Jalan / Dusun / RT / RW / Nomor Rumah *</label>
+                    <textarea name="alamat" rows="2" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">{{ santri.alamat }}</textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Desa / Kelurahan</label>
+                        <input type="text" name="desa_kelurahan_santri" value="{{ santri.desa_kelurahan_santri|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kecamatan</label>
+                        <input type="text" name="kecamatan_santri" value="{{ santri.kecamatan_santri|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kabupaten / Kota</label>
+                        <input type="text" name="kabupaten_kota_santri" value="{{ santri.kabupaten_kota_santri|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Provinsi</label>
+                        <input type="text" name="provinsi_santri" value="{{ santri.provinsi_santri|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kode Pos</label>
+                        <input type="text" name="kode_pos_santri" value="{{ santri.kode_pos_santri|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= STEP 3: DATA AYAH KANDUNG ================= -->
+            <div x-show="step === 3" x-cloak class="space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900">3. Data Ayah Kandung</h3>
+                    <p class="text-xs text-slate-500">Biodata, status, pekerjaan, dan alamat ayah santri.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Lengkap Ayah</label>
+                        <input type="text" name="nama_ayah" value="{{ santri.nama_ayah|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Status Ayah</label>
+                        <select name="status_ayah" x-model="statusAyah" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="hidup">Masih Hidup</option>
+                            <option value="meninggal">Meninggal Dunia (Alm)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">NIK Ayah</label>
+                        <input type="text" name="nik_ayah" value="{{ santri.nik_ayah|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">No. WhatsApp / HP Ayah</label>
+                        <input type="text" name="telepon_ayah" value="{{ santri.telepon_ayah|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" x-show="statusAyah === 'hidup'">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pendidikan Terakhir</label>
+                        <input type="text" name="pendidikan_ayah" value="{{ santri.pendidikan_ayah|default:'' }}" placeholder="S1, SMA, Pesantren..." class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pekerjaan Ayah</label>
+                        <input type="text" name="pekerjaan_ayah" value="{{ santri.pekerjaan_ayah|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Penghasilan Bulanan</label>
+                        <input type="text" name="penghasilan_ayah" value="{{ santri.penghasilan_ayah|default:'' }}" placeholder="Misal: 3 - 5 Juta" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- One-Click Sync Alamat Ayah -->
+                <div class="pt-4 border-t border-slate-100">
+                    <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100/80 transition">
+                        <input type="checkbox" name="alamat_ayah_sama" x-model="alamatAyahSama" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                        <span class="text-xs font-bold text-slate-800">Alamat Ayah Sama dengan Alamat Santri</span>
+                    </label>
+
+                    <div x-show="!alamatAyahSama" x-cloak class="mt-4 p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                        <textarea name="alamat_ayah" rows="2" placeholder="Alamat khusus ayah..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">{{ santri.alamat_ayah }}</textarea>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <input type="text" name="desa_kelurahan_ayah" value="{{ santri.desa_kelurahan_ayah|default:'' }}" placeholder="Desa" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                            <input type="text" name="kecamatan_ayah" value="{{ santri.kecamatan_ayah|default:'' }}" placeholder="Kecamatan" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                            <input type="text" name="kabupaten_kota_ayah" value="{{ santri.kabupaten_kota_ayah|default:'' }}" placeholder="Kab/Kota" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                            <input type="text" name="provinsi_ayah" value="{{ santri.provinsi_ayah|default:'' }}" placeholder="Provinsi" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= STEP 4: DATA IBU KANDUNG ================= -->
+            <div x-show="step === 4" x-cloak class="space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900">4. Data Ibu Kandung</h3>
+                    <p class="text-xs text-slate-500">Biodata, status, pekerjaan, dan alamat ibu santri.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Lengkap Ibu</label>
+                        <input type="text" name="nama_ibu" value="{{ santri.nama_ibu|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Status Ibu</label>
+                        <select name="status_ibu" x-model="statusIbu" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="hidup">Masih Hidup</option>
+                            <option value="meninggal">Meninggal Dunia (Almh)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">NIK Ibu</label>
+                        <input type="text" name="nik_ibu" value="{{ santri.nik_ibu|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">No. WhatsApp / HP Ibu</label>
+                        <input type="text" name="telepon_ibu" value="{{ santri.telepon_ibu|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" x-show="statusIbu === 'hidup'">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pendidikan Terakhir</label>
+                        <input type="text" name="pendidikan_ibu" value="{{ santri.pendidikan_ibu|default:'' }}" placeholder="SMA, S1, Pesantren..." class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pekerjaan Ibu</label>
+                        <input type="text" name="pekerjaan_ibu" value="{{ santri.pekerjaan_ibu|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Penghasilan Bulanan</label>
+                        <input type="text" name="penghasilan_ibu" value="{{ santri.penghasilan_ibu|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- One-Click Sync Alamat Ibu -->
+                <div class="pt-4 border-t border-slate-100">
+                    <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100/80 transition">
+                        <input type="checkbox" name="alamat_ibu_sama" x-model="alamatIbuSama" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                        <span class="text-xs font-bold text-slate-800">Alamat Ibu Sama dengan Alamat Santri / Ayah</span>
+                    </label>
+
+                    <div x-show="!alamatIbuSama" x-cloak class="mt-4 p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                        <textarea name="alamat_ibu" rows="2" placeholder="Alamat khusus ibu..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">{{ santri.alamat_ibu }}</textarea>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <input type="text" name="desa_kelurahan_ibu" value="{{ santri.desa_kelurahan_ibu|default:'' }}" placeholder="Desa" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                            <input type="text" name="kecamatan_ibu" value="{{ santri.kecamatan_ibu|default:'' }}" placeholder="Kecamatan" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                            <input type="text" name="kabupaten_kota_ibu" value="{{ santri.kabupaten_kota_ibu|default:'' }}" placeholder="Kab/Kota" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                            <input type="text" name="provinsi_ibu" value="{{ santri.provinsi_ibu|default:'' }}" placeholder="Provinsi" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= STEP 5: DATA WALI SANTRI ================= -->
+            <div x-show="step === 5" x-cloak class="space-y-5">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900">5. Data Wali Santri & Kontak Darurat</h3>
+                    <p class="text-xs text-slate-500">Pihak penanggung jawab santri.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Penanggung Jawab / Wali Santri Adalah: *</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex items-center gap-2"
+                               :class="hubunganWali === 'sama_ayah' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'">
+                            <input type="radio" name="hubungan_wali" value="sama_ayah" x-model="hubunganWali" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs">Ayah Kandung</span>
+                        </label>
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex items-center gap-2"
+                               :class="hubunganWali === 'sama_ibu' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'">
+                            <input type="radio" name="hubungan_wali" value="sama_ibu" x-model="hubunganWali" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs">Ibu Kandung</span>
+                        </label>
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex items-center gap-2"
+                               :class="hubunganWali === 'kakek_nenek' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'">
+                            <input type="radio" name="hubungan_wali" value="kakek_nenek" x-model="hubunganWali" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs">Kakek / Nenek</span>
+                        </label>
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex items-center gap-2"
+                               :class="hubunganWali === 'paman_bibi' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'">
+                            <input type="radio" name="hubungan_wali" value="paman_bibi" x-model="hubunganWali" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs">Paman / Bibi</span>
+                        </label>
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex items-center gap-2"
+                               :class="hubunganWali === 'saudara' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'">
+                            <input type="radio" name="hubungan_wali" value="saudara" x-model="hubunganWali" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs">Kakak / Saudara</span>
+                        </label>
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex items-center gap-2"
+                               :class="hubunganWali === 'lainnya' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'">
+                            <input type="radio" name="hubungan_wali" value="lainnya" x-model="hubunganWali" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs">Wali Lainnya</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div x-show="hubunganWali === 'sama_ayah' || hubunganWali === 'sama_ibu'" class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+                    <svg class="w-6 h-6 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p class="text-xs text-emerald-800 font-medium">
+                        Penanggung jawab wali otomatis mengacu pada <strong x-text="hubunganWali === 'sama_ayah' ? 'Ayah Kandung' : 'Ibu Kandung'"></strong>.
+                    </p>
+                </div>
+
+                <div x-show="hubunganWali !== 'sama_ayah' && hubunganWali !== 'sama_ibu'" x-cloak class="space-y-4 pt-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Lengkap Wali</label>
+                            <input type="text" name="nama_wali" value="{{ santri.nama_wali|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">NIK Wali</label>
+                            <input type="text" name="nik_wali" value="{{ santri.nik_wali|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pekerjaan Wali</label>
+                            <input type="text" name="pekerjaan_wali" value="{{ santri.pekerjaan_wali|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">No. WhatsApp / HP Wali</label>
+                            <input type="text" name="telepon_wali" value="{{ santri.telepon_wali|default:'' }}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100/80 transition">
+                            <input type="checkbox" name="alamat_wali_sama" x-model="alamatWaliSama" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                            <span class="text-xs font-bold text-slate-800">Alamat Wali Sama dengan Alamat Santri</span>
+                        </label>
+
+                        <div x-show="!alamatWaliSama" x-cloak class="mt-3 p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                            <textarea name="alamat_wali" rows="2" placeholder="Alamat lengkap wali..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">{{ santri.alamat_wali }}</textarea>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <input type="text" name="desa_kelurahan_wali" value="{{ santri.desa_kelurahan_wali|default:'' }}" placeholder="Desa" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                                <input type="text" name="kecamatan_wali" value="{{ santri.kecamatan_wali|default:'' }}" placeholder="Kecamatan" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                                <input type="text" name="kabupaten_kota_wali" value="{{ santri.kabupaten_kota_wali|default:'' }}" placeholder="Kab/Kota" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                                <input type="text" name="provinsi_wali" value="{{ santri.provinsi_wali|default:'' }}" placeholder="Provinsi" class="px-3 py-2 border border-slate-200 rounded-lg text-xs">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stepper Controls & Submit -->
+            <div class="pt-6 border-t border-slate-100 flex items-center justify-between gap-3">
+                <div>
+                    <button type="button" x-show="step > 1" @click="setStep(step - 1)" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition inline-flex items-center gap-1.5">
+                        &larr; Sebelumnya
+                    </button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" x-show="step < totalSteps" @click="setStep(step + 1)" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 transition inline-flex items-center gap-1.5">
+                        Selanjutnya &rarr;
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition inline-flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Simpan Perubahan Santri
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Tahun Ajaran: {{ ta.nama }}{% else %}Tambah Tahun Ajaran Baru{% endif %} - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <a href="{% url 'santri:tahun-ajaran-list' %}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Kembali ke Kalender Akademik
+    </a>
+
+    <!-- Main Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 sm:p-8">
+        <div class="border-b border-slate-100 pb-4 mb-6">
+            <h2 class="text-xl font-bold text-slate-900">
+                {% if is_edit %}Edit Master Tahun Ajaran{% else %}Tambah Tahun Ajaran Baru{% endif %}
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Tentukan nama periode dan rentang tanggal berjalannya tahun ajaran akademik.</p>
+        </div>
+
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Tahun Ajaran *</label>
+                <input type="text" name="nama" required value="{% if is_edit %}{{ ta.nama }}{% endif %}" placeholder="Contoh: 2026/2027 atau 1447/1448 H" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono">
+                <p class="text-[11px] text-slate-400 mt-1">Format umum: YYYY/YYYY (contoh: 2026/2027).</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Mulai *</label>
+                    <input type="date" name="tanggal_mulai" required value="{% if is_edit %}{{ ta.tanggal_mulai|date:'Y-m-d' }}{% endif %}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Selesai *</label>
+                    <input type="date" name="tanggal_selesai" required value="{% if is_edit %}{{ ta.tanggal_selesai|date:'Y-m-d' }}{% endif %}" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+
+            <div class="pt-2 space-y-3">
+                <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="is_active" {% if is_edit and ta.is_active %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                    <div class="text-xs">
+                        <span class="font-bold text-slate-800">Set Sebagai Tahun Ajaran Aktif</span>
+                        <p class="text-slate-400 text-[11px]">Tahun ajaran aktif lain akan otomatis dinonaktifkan.</p>
+                    </div>
+                </label>
+
+                {% if not is_edit %}
+                <label class="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 cursor-pointer hover:bg-emerald-50 transition">
+                    <input type="checkbox" name="auto_semester" checked class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                    <div class="text-xs">
+                        <span class="font-bold text-emerald-900">Otomatis Generate Semester Ganjil & Genap</span>
+                        <p class="text-emerald-700 text-[11px]">Membuat otomatis 2 semester untuk tahun ajaran ini dan mengaktifkan semester Ganjil.</p>
+                    </div>
+                </label>
+                {% endif %}
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <a href="{% url 'santri:tahun-ajaran-list' %}" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    Batal
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white shadow-sm transition inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {% if is_edit %}Simpan Perubahan{% else %}Simpan Tahun Ajaran{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

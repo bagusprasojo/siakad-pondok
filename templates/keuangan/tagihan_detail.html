@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Invoice {{ tagihan.nomor_invoice }} - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'keuangan:tagihan-list' %}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Kembali ke Daftar Tagihan
+        </a>
+        {% if tagihan.sisa_tagihan > 0 %}
+            <a href="{% url 'keuangan:pembayaran-create' %}?tagihan={{ tagihan.uuid }}" 
+               class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Bayar Tagihan Ini
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Invoice Header Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-slate-100 gap-4">
+            <div>
+                <span class="text-xs font-bold text-amber-700 uppercase tracking-wider block font-mono">INVOICE TAGIHAN</span>
+                <h1 class="text-2xl font-extrabold text-slate-900 mt-0.5 font-mono">{{ tagihan.nomor_invoice }}</h1>
+                <p class="text-xs text-slate-400 mt-1">Dibuat pada: {{ tagihan.created_at|date:"d F Y, H:i" }}</p>
+            </div>
+            <div>
+                {% if tagihan.status == 'lunas' %}
+                    <span class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        STATUS: LUNAS
+                    </span>
+                {% elif tagihan.status == 'sebagian' %}
+                    <span class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        STATUS: DICICIL (SEBAGIAN)
+                    </span>
+                {% else %}
+                    <span class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        STATUS: BELUM DIBAYAR
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Data Santri -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Tagihan Santri:</span>
+                <a href="{% url 'santri:santri-detail' tagihan.santri.uuid %}" class="text-base font-bold text-slate-900 hover:text-emerald-600 hover:underline block">
+                    {{ tagihan.santri.nama_lengkap }}
+                </a>
+                <p class="text-xs text-slate-500 font-mono">NIS: <strong class="text-slate-700">{{ tagihan.santri.nis }}</strong></p>
+                <p class="text-xs text-slate-500">Wali: {{ tagihan.santri.nama_ayah|default:"-" }} ({{ tagihan.santri.telepon_wali|default:"-" }})</p>
+            </div>
+
+            <!-- Pos & Periode -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Rincian Pos Tagihan:</span>
+                <p class="text-base font-bold text-slate-900">{{ tagihan.pos_tarif.nama }}</p>
+                <p class="text-xs text-slate-500">Tahun Ajaran: {{ tagihan.tahun_ajaran.nama }}</p>
+                {% if tagihan.bulan %}
+                    <p class="text-xs text-slate-500">Periode: Bulan ke-{{ tagihan.bulan }} / {{ tagihan.tahun }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Breakdown Angka -->
+        <div class="p-4 bg-slate-900 text-white rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div>
+                <p class="text-[11px] text-slate-400 font-medium">Total Wajib Bayar</p>
+                <p class="text-lg font-bold mt-1">Rp {{ tagihan.total_tagihan|floatformat:0|intcomma }}</p>
+            </div>
+            <div>
+                <p class="text-[11px] text-emerald-400 font-medium">Sudah Terbayar</p>
+                <p class="text-lg font-bold text-emerald-400 mt-1">Rp {{ tagihan.total_terbayar|floatformat:0|intcomma }}</p>
+            </div>
+            <div>
+                <p class="text-[11px] text-rose-400 font-medium">Sisa Tagihan</p>
+                <p class="text-lg font-bold text-rose-400 mt-1">Rp {{ tagihan.sisa_tagihan|floatformat:0|intcomma }}</p>
+            </div>
+        </div>
+
+        <!-- Riwayat Pembayaran Invoice Ini -->
+        <div class="space-y-3 pt-4 border-t border-slate-100">
+            <h3 class="text-sm font-bold text-slate-900">Histori Pembayaran Terkait</h3>
+            <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                        <tr>
+                            <th class="px-4 py-3">No. Bukti (Kwitansi)</th>
+                            <th class="px-4 py-3">Tanggal Bayar</th>
+                            <th class="px-4 py-3 text-right">Nominal</th>
+                            <th class="px-4 py-3">Metode</th>
+                            <th class="px-4 py-3">Petugas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for bayar in riwayat_pembayaran %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <!-- Link ke Detail Transaksi Pembayaran -->
+                            <td class="px-4 py-3 font-mono text-xs font-semibold">
+                                <a href="{% url 'keuangan:pembayaran-detail' bayar.uuid %}" class="text-emerald-600 hover:underline">
+                                    {{ bayar.nomor_bukti }}
+                                </a>
+                            </td>
+                            <td class="px-4 py-3 text-xs text-slate-600">{{ bayar.tanggal_bayar|date:"d M Y, H:i" }}</td>
+                            <td class="px-4 py-3 text-right font-bold text-slate-900">Rp {{ bayar.nominal|floatformat:0|intcomma }}</td>
+                            <td class="px-4 py-3 text-xs capitalize">{{ bayar.get_metode_pembayaran_display }}</td>
+                            <td class="px-4 py-3 text-xs text-slate-500">{{ bayar.petugas.get_full_name|default:bayar.petugas.username }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-6 text-center text-slate-400 text-xs">Belum ada transaksi pembayaran yang dicatat untuk invoice ini.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Induk Santri - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ deleteModalOpen: false, deleteActionUrl: '', deleteSantriName: '' }">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Data Induk Santri</h2>
+            <p class="text-sm text-slate-500 mt-1">Master data santri aktif, mutasi, dan alumni pesantren.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'santri:santri-create' %}" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Santri Baru
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <form method="GET" class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Cari Nama Santri, NIS, NISN, atau Nama Wali..." 
+                       class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+            </div>
+            <div class="w-full md:w-48">
+                <select name="rombel" class="w-full py-2 px-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <option value="">Semua Rombel</option>
+                    {% for r in rombel_list %}
+                        <option value="{{ r.uuid }}" {% if rombel_filter == r.uuid|stringformat:'s' %}selected{% endif %}>{{ r.nama }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-full md:w-40">
+                <select name="status" class="w-full py-2 px-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <option value="">Semua Status</option>
+                    {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-semibold transition">
+                Filter
+            </button>
+            {% if search_query or status_filter or rombel_filter %}
+                <a href="{% url 'santri:santri-list' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition text-center">
+                    Reset
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Tabel Data Santri -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4">NIS</th>
+                        <th class="px-6 py-4">Nama Lengkap Santri</th>
+                        <th class="px-6 py-4">L/P</th>
+                        <th class="px-6 py-4">Rombel Aktif</th>
+                        <th class="px-6 py-4">Wali / No. WhatsApp</th>
+                        <th class="px-6 py-4 text-center">Status</th>
+                        <th class="px-6 py-4 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for santri in page_obj %}
+                    <tr class="hover:bg-slate-50/70 transition">
+                        <!-- NIS Link ke Detail -->
+                        <td class="px-6 py-4 font-mono font-bold text-xs">
+                            <a href="{% url 'santri:santri-detail' santri.uuid %}" class="text-emerald-600 hover:underline">
+                                {{ santri.nis }}
+                            </a>
+                        </td>
+
+                        <!-- Nama Santri Link ke Detail -->
+                        <td class="px-6 py-4 font-semibold text-slate-900">
+                            <a href="{% url 'santri:santri-detail' santri.uuid %}" class="hover:text-emerald-600">
+                                {{ santri.nama_lengkap }}
+                            </a>
+                        </td>
+
+                        <td class="px-6 py-4 text-xs font-semibold text-slate-600">
+                            {{ santri.jenis_kelamin }}
+                        </td>
+
+                        <!-- Rombel Link -->
+                        <td class="px-6 py-4 text-xs">
+                            {% with r=santri.rombel_aktif %}
+                                {% if r %}
+                                    <a href="{% url 'santri:rombel-detail' r.uuid %}" class="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md font-medium hover:underline">
+                                        {{ r.nama }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-slate-400 italic">Belum ditempatkan</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+
+                        <td class="px-6 py-4 text-xs text-slate-600">
+                            {{ santri.nama_ayah|default:"-" }}
+                            {% if santri.telepon_wali %}
+                                <span class="block text-slate-400 font-mono">{{ santri.telepon_wali }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            {% if santri.status == 'aktif' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Aktif</span>
+                            {% elif santri.status == 'lulus' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">Lulus</span>
+                            {% else %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 capitalize">{{ santri.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Kolom Aksi -->
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                <a href="{% url 'santri:santri-detail' santri.uuid %}" class="p-1.5 text-slate-500 hover:text-emerald-600 rounded-lg hover:bg-slate-100 transition" title="Lihat Profil">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </a>
+                                <a href="{% url 'santri:santri-edit' santri.uuid %}" class="p-1.5 text-slate-500 hover:text-sky-600 rounded-lg hover:bg-slate-100 transition" title="Edit Data">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </a>
+                                <button type="button" 
+                                        @click="deleteModalOpen = true; deleteActionUrl = '{% url 'santri:santri-delete' santri.uuid %}'; deleteSantriName = '{{ santri.nama_lengkap }} (NIS: {{ santri.nis }})';"
+                                        class="p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50 transition" title="Hapus Data">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                            Tidak ada data santri ditemukan.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span class="text-xs text-slate-500">
+                Menampilkan halaman <strong class="text-slate-800">{{ page_obj.number }}</strong> dari <strong class="text-slate-800">{{ page_obj.paginator.num_pages }}</strong> (Total {{ total_santri }} santri)
+            </span>
+            <div class="inline-flex items-center gap-1">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if rombel_filter %}&rombel={{ rombel_filter }}{% endif %}" 
+                       class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 transition">
+                        &larr; Sebelumnya
+                    </a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if rombel_filter %}&rombel={{ rombel_filter }}{% endif %}" 
+                           class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 transition">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if rombel_filter %}&rombel={{ rombel_filter }}{% endif %}" 
+                       class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 transition">
+                        Berikutnya &rarr;
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal Hapus Santri -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100" @click.outside="deleteModalOpen = false">
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Hapus Data Santri</h3>
+            <p class="text-sm text-slate-600">
+                Apakah Anda yakin ingin menghapus santri <strong class="text-slate-900" x-text="deleteSantriName"></strong>? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <form :action="deleteActionUrl" method="POST" class="mt-6 flex items-center justify-end gap-3">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
+                    Batal
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 transition">
+                    Hapus
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

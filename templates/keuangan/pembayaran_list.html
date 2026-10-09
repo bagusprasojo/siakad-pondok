@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Daftar Transaksi Pembayaran - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ deleteModalOpen: false, deleteActionUrl: '', deleteItemName: '' }">
+    <!-- Header & Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Daftar Transaksi Pembayaran</h2>
+            <p class="text-sm text-slate-500 mt-1">Seluruh bukti transaksi pembayaran kasir dan transfer yang telah tercatat di sistem.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'keuangan:pembayaran-create' %}" 
+               class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                + Transaksi Baru (Kasir)
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <form method="GET" class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Cari No. Bukti, Nama Santri, NIS, atau No. Invoice..." 
+                       class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+            </div>
+            <div class="w-full md:w-48">
+                <select name="metode" class="w-full py-2 px-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <option value="">Semua Metode</option>
+                    <option value="tunai" {% if metode_filter == 'tunai' %}selected{% endif %}>Tunai</option>
+                    <option value="transfer" {% if metode_filter == 'transfer' %}selected{% endif %}>Transfer Bank</option>
+                    <option value="qris" {% if metode_filter == 'qris' %}selected{% endif %}>QRIS</option>
+                    <option value="va" {% if metode_filter == 'va' %}selected{% endif %}>Virtual Account</option>
+                </select>
+            </div>
+            <button type="submit" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-semibold transition">
+                Filter
+            </button>
+            {% if search_query or metode_filter %}
+                <a href="{% url 'keuangan:pembayaran-list' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-medium transition text-center">
+                    Reset
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Data Table Transaksi -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4">No. Bukti (Kwitansi)</th>
+                        <th class="px-6 py-4">Tanggal Transaksi</th>
+                        <th class="px-6 py-4">Santri</th>
+                        <th class="px-6 py-4">No. Invoice Tagihan</th>
+                        <th class="px-6 py-4">Pos Pembayaran</th>
+                        <th class="px-6 py-4 text-right">Nominal Bayar</th>
+                        <th class="px-6 py-4">Metode</th>
+                        <th class="px-6 py-4 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for pembayaran in page_obj %}
+                    <tr class="hover:bg-slate-50/70 transition">
+                        <!-- 1. Kolom No Bukti -> URL ke Detail Transaksi -->
+                        <td class="px-6 py-4 font-semibold font-mono text-xs">
+                            <a href="{% url 'keuangan:pembayaran-detail' pembayaran.uuid %}" 
+                               class="text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-1.5"
+                               title="Lihat Detail Transaksi">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                {{ pembayaran.nomor_bukti }}
+                            </a>
+                        </td>
+
+                        <!-- 2. Tanggal Bayar -->
+                        <td class="px-6 py-4 text-slate-600 text-xs whitespace-nowrap">
+                            {{ pembayaran.tanggal_bayar|date:"d M Y, H:i" }}
+                        </td>
+
+                        <!-- 3. Kolom Santri -> URL ke Detail Santri -->
+                        <td class="px-6 py-4">
+                            <a href="{% url 'santri:santri-detail' pembayaran.santri.uuid %}" 
+                               class="text-slate-900 hover:text-emerald-600 font-medium block leading-tight">
+                                {{ pembayaran.santri.nama_lengkap }}
+                            </a>
+                            <span class="text-xs text-slate-400 font-mono">NIS: {{ pembayaran.santri.nis }}</span>
+                        </td>
+
+                        <!-- 4. Kolom No Invoice -> URL ke Detail Invoice Tagihan -->
+                        <td class="px-6 py-4">
+                            <a href="{% url 'keuangan:tagihan-detail' pembayaran.tagihan.uuid %}" 
+                               class="text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-md text-xs font-mono font-medium hover:underline inline-flex items-center gap-1">
+                                <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                {{ pembayaran.tagihan.nomor_invoice }}
+                            </a>
+                        </td>
+
+                        <!-- 5. Pos Tarif -->
+                        <td class="px-6 py-4 text-xs text-slate-700">
+                            {{ pembayaran.tagihan.pos_tarif.nama }}
+                        </td>
+
+                        <!-- 6. Nominal Bayar -->
+                        <td class="px-6 py-4 text-right font-bold text-slate-900 whitespace-nowrap">
+                            Rp {{ pembayaran.nominal|floatformat:0|intcomma }}
+                        </td>
+
+                        <!-- 7. Metode Pembayaran -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if pembayaran.metode_pembayaran == 'tunai' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                {% elif pembayaran.metode_pembayaran == 'transfer' %}bg-blue-50 text-blue-700 border border-blue-200
+                                {% else %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
+                                {{ pembayaran.get_metode_pembayaran_display }}
+                            </span>
+                        </td>
+
+                        <!-- 8. Kolom Aksi Hapus -->
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center gap-2">
+                                <a href="{% url 'keuangan:pembayaran-detail' pembayaran.uuid %}" 
+                                   class="p-1.5 text-slate-500 hover:text-emerald-600 rounded-lg hover:bg-slate-100 transition" 
+                                   title="Detail Transaksi">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </a>
+
+                                <button type="button"
+                                        @click="deleteModalOpen = true; deleteActionUrl = '{% url 'keuangan:pembayaran-delete' pembayaran.uuid %}'; deleteItemName = '{{ pembayaran.nomor_bukti }} (Rp {{ pembayaran.nominal|floatformat:0|intcomma }})';"
+                                        class="p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50 transition" 
+                                        title="Hapus Transaksi">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                            <p class="font-medium text-base">Tidak ada transaksi pembayaran ditemukan</p>
+                            <p class="text-xs text-slate-400 mt-1">Gunakan tombol "+ Transaksi Baru" untuk mengentri pembayaran pertama.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span class="text-xs text-slate-500">
+                Menampilkan halaman <strong class="text-slate-800">{{ page_obj.number }}</strong> dari <strong class="text-slate-800">{{ page_obj.paginator.num_pages }}</strong> (Total {{ total_transaksi }} data)
+            </span>
+            <div class="inline-flex items-center gap-1">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if metode_filter %}&metode={{ metode_filter }}{% endif %}" 
+                       class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 transition">
+                        &larr; Sebelumnya
+                    </a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if metode_filter %}&metode={{ metode_filter }}{% endif %}" 
+                           class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 transition">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if metode_filter %}&metode={{ metode_filter }}{% endif %}" 
+                       class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 transition">
+                        Berikutnya &rarr;
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Alpine.js Confirmation Modal Hapus -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100" @click.outside="deleteModalOpen = false">
+            <div class="flex items-center gap-3 text-rose-600 mb-4">
+                <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Konfirmasi Hapus Transaksi</h3>
+            </div>
+            <p class="text-sm text-slate-600 leading-relaxed">
+                Apakah Anda yakin ingin menghapus transaksi pembayaran <strong class="text-slate-900 font-mono" x-text="deleteItemName"></strong>?
+            </p>
+            <p class="text-xs text-rose-600 mt-2 bg-rose-50 p-2.5 rounded-lg">
+                ⚠️ Menghapus pembayaran ini akan secara otomatis <strong>mengembalikan saldo sisa tagihan santri</strong> terkait.
+            </p>
+            <form :action="deleteActionUrl" method="POST" class="mt-6 flex items-center justify-end gap-3">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
+                    Batal
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition">
+                    Ya, Hapus Transaksi
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

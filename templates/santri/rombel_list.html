@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Daftar Rombongan Belajar (Rombel) - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ deleteModalOpen: false, deleteActionUrl: '', deleteItemName: '' }">
+    <!-- Header Page -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Rombongan Belajar (Rombel)</h2>
+            <p class="text-sm text-slate-500 mt-1">Daftar kelas pembelajaran, wali rombel (asatidz), dan kapasitas santri per tahun ajaran.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+            <a href="{% url 'santri:rombel-salin' %}" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition" title="Duplikasi Rombel dari TA Sebelumnya">
+                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                Salin Rombel TA
+            </a>
+            <a href="{% url 'santri:kenaikan-kelas' %}" class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                Kenaikan Kelas
+            </a>
+            <a href="{% url 'santri:rombel-create' %}" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Rombel
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+        <form method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            <!-- Filter Tahun Ajaran -->
+            <div class="sm:col-span-4">
+                <select name="ta" onchange="this.form.submit()" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    {% for ta in daftar_ta %}
+                        <option value="{{ ta.uuid }}" {% if selected_ta and selected_ta.uuid == ta.uuid %}selected{% endif %}>
+                            Tahun Ajaran {{ ta.nama }} {% if ta.is_active %}(Aktif){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filter Tingkat -->
+            <div class="sm:col-span-3">
+                <select name="tingkat" onchange="this.form.submit()" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <option value="">Semua Tingkat</option>
+                    <option value="1" {% if tingkat_filter == '1' %}selected{% endif %}>Tingkat 1 / Kelas 7</option>
+                    <option value="2" {% if tingkat_filter == '2' %}selected{% endif %}>Tingkat 2 / Kelas 8</option>
+                    <option value="3" {% if tingkat_filter == '3' %}selected{% endif %}>Tingkat 3 / Kelas 9</option>
+                    <option value="4" {% if tingkat_filter == '4' %}selected{% endif %}>Tingkat 4 / Kelas 10</option>
+                    <option value="5" {% if tingkat_filter == '5' %}selected{% endif %}>Tingkat 5 / Kelas 11</option>
+                    <option value="6" {% if tingkat_filter == '6' %}selected{% endif %}>Tingkat 6 / Kelas 12</option>
+                </select>
+            </div>
+
+            <!-- Search Nama / Wali -->
+            <div class="sm:col-span-5 flex gap-2">
+                <div class="relative flex-1">
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Cari nama rombel / wali kelas..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition">
+                    Cari
+                </button>
+                {% if search_query or tingkat_filter %}
+                <a href="{% url 'santri:rombel-list' %}{% if selected_ta %}?ta={{ selected_ta.uuid }}{% endif %}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition">
+                    Reset
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Grid Kartu Rombel -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {% for rombel in page_obj %}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition p-6 flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Tingkat {{ rombel.tingkat }}
+                    </span>
+                    <span class="text-xs text-slate-400 font-mono font-medium">{{ rombel.tahun_ajaran.nama }}</span>
+                </div>
+                
+                <h3 class="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition">
+                    <a href="{% url 'santri:rombel-detail' rombel.uuid %}">
+                        {{ rombel.nama }}
+                    </a>
+                </h3>
+
+                <!-- Info Wali Rombel -->
+                <div class="flex items-center gap-2.5 pt-1 text-xs text-slate-600">
+                    <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                        {% if rombel.wali_rombel %}{{ rombel.wali_rombel.username|slice:":1"|upper }}{% else %}?{% endif %}
+                    </div>
+                    <div class="overflow-hidden">
+                        <span class="text-[10px] text-slate-400 block uppercase font-semibold">Wali Kelas</span>
+                        <p class="font-medium text-slate-800 truncate">
+                            {% if rombel.wali_rombel %}
+                                {{ rombel.wali_rombel.get_full_name|default:rombel.wali_rombel.username }}
+                            {% else %}
+                                <span class="italic text-slate-400">Belum Ditentukan</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Progress Kapasitas Santri -->
+                <div class="pt-2">
+                    <div class="flex items-center justify-between text-xs mb-1.5">
+                        <span class="text-slate-500 text-[11px]">Kapasitas Terisi:</span>
+                        <span class="font-bold text-slate-800 font-mono">
+                            {{ rombel.total_santri }} <span class="text-slate-400 font-normal">/ {{ rombel.kapasitas }} Santri</span>
+                        </span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div class="{% if rombel.total_santri >= rombel.kapasitas %}bg-rose-500{% elif rombel.total_santri >= 25 %}bg-amber-500{% else %}bg-emerald-500{% endif %} h-2 rounded-full transition-all"
+                             style="width: {% widthratio rombel.total_santri rombel.kapasitas 100 %}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="pt-5 border-t border-slate-100 mt-5 flex items-center justify-between">
+                <a href="{% url 'santri:rombel-detail' rombel.uuid %}" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-800">
+                    Buka Kelas
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                
+                <div class="flex items-center gap-1">
+                    <a href="{% url 'santri:rombel-edit' rombel.uuid %}" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition" title="Edit Rombel">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </a>
+                    
+                    {% if rombel.total_santri == 0 %}
+                    <button type="button" @click="deleteModalOpen = true; deleteActionUrl = '{% url 'santri:rombel-delete' rombel.uuid %}'; deleteItemName = '{{ rombel.nama }}'" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus Rombel">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-3 bg-white p-12 text-center text-slate-400 rounded-2xl border border-slate-200/80">
+            <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <p class="font-semibold text-slate-700">Belum ada rombel pada kriteria ini.</p>
+            <p class="text-xs text-slate-400 mt-1">Anda bisa menambahkan rombel baru atau menyalin rombel dari tahun ajaran sebelumnya.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between bg-white px-6 py-4 rounded-2xl border border-slate-200/80">
+        <span class="text-xs text-slate-500">
+            Menampilkan halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+        </span>
+        <div class="flex items-center gap-1">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if selected_ta %}&ta={{ selected_ta.uuid }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                &larr; Prev
+            </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if selected_ta %}&ta={{ selected_ta.uuid }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                Next &rarr;
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Modal Konfirmasi Hapus Rombel -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" @click.self="deleteModalOpen = false">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold mx-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div class="text-center space-y-1">
+                <h3 class="text-lg font-bold text-slate-900">Hapus Rombongan Belajar</h3>
+                <p class="text-xs text-slate-500">Apakah Anda yakin ingin menghapus rombel <strong x-text="deleteItemName" class="text-slate-800"></strong>?</p>
+            </div>
+            <form :action="deleteActionUrl" method="POST" class="flex items-center gap-3 pt-2">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    Batal
+                </button>
+                <button type="submit" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white shadow-sm transition">
+                    Hapus Rombel
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

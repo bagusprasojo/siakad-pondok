@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header Page -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Dashboard Ringkasan</h2>
+            <p class="text-sm text-slate-500 mt-1">Pantau perkembangan operasional akademik santri dan keuangan pesantren real-time.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'keuangan:pembayaran-create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Kasir Pembayaran
+            </a>
+            <a href="{% url 'santri:santri-create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold shadow-xs transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                Santri Baru
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Card 1: Santri Aktif -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Santri Aktif</p>
+                <h3 class="text-2xl font-extrabold text-slate-900 mt-1">{{ total_santri_aktif }}</h3>
+                <span class="text-xs text-emerald-600 font-medium inline-flex items-center gap-1 mt-1">
+                    Terdaftar di sistem
+                </span>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+        </div>
+
+        <!-- Card 2: Rombel -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Rombel Aktif</p>
+                <h3 class="text-2xl font-extrabold text-slate-900 mt-1">{{ total_rombel }}</h3>
+                <span class="text-xs text-slate-500 font-medium mt-1">Kelas pembelajaran</span>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            </div>
+        </div>
+
+        <!-- Card 3: Total Kas Masuk -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Kas Masuk</p>
+                <h3 class="text-2xl font-extrabold text-emerald-700 mt-1">Rp {{ total_kas_masuk|floatformat:0|intcomma }}</h3>
+                <span class="text-xs text-emerald-600 font-medium mt-1">Akumulasi pembayaran</span>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+        </div>
+
+        <!-- Card 4: Sisa Tunggakan -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Tunggakan</p>
+                <h3 class="text-2xl font-extrabold text-rose-600 mt-1">Rp {{ total_tunggakan|floatformat:0|intcomma }}</h3>
+                <span class="text-xs text-rose-500 font-medium mt-1">Perlu ditagihkan</span>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dua Tabel Ringkasan Terakhir -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Transaksi Pembayaran Terbaru -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-slate-900">Transaksi Pembayaran Terbaru</h4>
+                    <p class="text-xs text-slate-500">5 pembayaran kasir/transfer terakhir</p>
+                </div>
+                <a href="{% url 'keuangan:pembayaran-list' %}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-800">Lihat Semua &rarr;</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-100">
+                        <tr>
+                            <th class="px-5 py-3">No. Bukti</th>
+                            <th class="px-5 py-3">Santri</th>
+                            <th class="px-5 py-3">No. Invoice</th>
+                            <th class="px-5 py-3 text-right">Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for bayar in transaksi_terbaru %}
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="px-5 py-3 font-medium">
+                                <a href="{% url 'keuangan:pembayaran-detail' bayar.uuid %}" class="text-emerald-600 hover:underline font-mono text-xs">
+                                    {{ bayar.nomor_bukti }}
+                                </a>
+                            </td>
+                            <td class="px-5 py-3">
+                                <a href="{% url 'santri:santri-detail' bayar.santri.uuid %}" class="text-slate-800 hover:text-emerald-600 font-medium">
+                                    {{ bayar.santri.nama_lengkap }}
+                                </a>
+                            </td>
+                            <td class="px-5 py-3">
+                                <a href="{% url 'keuangan:tagihan-detail' bayar.tagihan.uuid %}" class="text-amber-600 hover:underline text-xs font-mono">
+                                    {{ bayar.tagihan.nomor_invoice }}
+                                </a>
+                            </td>
+                            <td class="px-5 py-3 text-right font-semibold text-slate-900">
+                                Rp {{ bayar.nominal|floatformat:0|intcomma }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-5 py-8 text-center text-slate-400 text-sm">Belum ada transaksi pembayaran.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tagihan Menunggu Pembayaran -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-slate-900">Tagihan Belum Lunas</h4>
+                    <p class="text-xs text-slate-500">Invoice yang memerlukan pelunasan</p>
+                </div>
+                <a href="{% url 'keuangan:tagihan-list' %}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-800">Lihat Semua &rarr;</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-100">
+                        <tr>
+                            <th class="px-5 py-3">No. Invoice</th>
+                            <th class="px-5 py-3">Santri</th>
+                            <th class="px-5 py-3">Pos Tarif</th>
+                            <th class="px-5 py-3 text-right">Sisa Tagihan</th>
+                            <th class="px-5 py-3 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for tagihan in tagihan_terbaru %}
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="px-5 py-3 font-medium">
+                                <a href="{% url 'keuangan:tagihan-detail' tagihan.uuid %}" class="text-amber-600 hover:underline font-mono text-xs">
+                                    {{ tagihan.nomor_invoice }}
+                                </a>
+                            </td>
+                            <td class="px-5 py-3">
+                                <a href="{% url 'santri:santri-detail' tagihan.santri.uuid %}" class="text-slate-800 hover:text-emerald-600 font-medium">
+                                    {{ tagihan.santri.nama_lengkap }}
+                                </a>
+                            </td>
+                            <td class="px-5 py-3 text-xs text-slate-600">
+                                {{ tagihan.pos_tarif.nama }}
+                            </td>
+                            <td class="px-5 py-3 text-right font-bold text-rose-600">
+                                Rp {{ tagihan.sisa_tagihan|floatformat:0|intcomma }}
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <a href="{% url 'keuangan:pembayaran-create' %}?tagihan={{ tagihan.uuid }}" class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">
+                                    Bayar
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-5 py-8 text-center text-slate-400 text-sm">Tidak ada tunggakan tagihan.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

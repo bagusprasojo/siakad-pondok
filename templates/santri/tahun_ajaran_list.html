@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Daftar Tahun Ajaran - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ deleteModalOpen: false, deleteActionUrl: '', deleteItemName: '' }">
+    <!-- Header Page -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Daftar Tahun Ajaran</h2>
+            <p class="text-sm text-slate-500 mt-1">Master kalender akademik madrasah dan pondok pesantren.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+            <a href="{% url 'santri:rombel-salin' %}" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition" title="Duplikasi Rombel dari TA Sebelumnya">
+                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                Duplikasi Rombel
+            </a>
+            <a href="{% url 'santri:tahun-ajaran-create' %}" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                + Tambah Tahun Ajaran
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Stats Bar -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">TA Aktif Berjalan</p>
+                <p class="text-base font-extrabold text-slate-900 font-mono">
+                    {% if active_ta %}{{ active_ta.nama }}{% else %}<span class="text-rose-500 italic">Belum Diatur</span>{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Semester Aktif</p>
+                <p class="text-base font-extrabold text-slate-900">
+                    {% if active_semester %}{{ active_semester.get_jenis_display }}{% else %}<span class="text-slate-400">-</span>{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Rombel Aktif</p>
+                <p class="text-base font-extrabold text-slate-900 font-mono">{{ total_rombel_aktif }} <span class="text-xs font-normal text-slate-400">Kelas</span></p>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Santri Aktif</p>
+                <p class="text-base font-extrabold text-slate-900 font-mono">{{ total_santri_aktif }} <span class="text-xs font-normal text-slate-400">Santri</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+        <form method="GET" class="flex flex-col sm:flex-row items-center gap-3">
+            <div class="relative flex-1 w-full">
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Cari nama tahun ajaran (contoh: 2026/2027)..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+
+            <div class="w-full sm:w-48">
+                <select name="status" onchange="this.form.submit()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <option value="">Semua Status</option>
+                    <option value="aktif" {% if status_filter == 'aktif' %}selected{% endif %}>Hanya Sedang Aktif</option>
+                    <option value="nonaktif" {% if status_filter == 'nonaktif' %}selected{% endif %}>Hanya Arsip / Non-Aktif</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button type="submit" class="flex-1 sm:flex-initial px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition">
+                    Filter
+                </button>
+                {% if search_query or status_filter %}
+                <a href="{% url 'santri:tahun-ajaran-list' %}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition">
+                    Reset
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Pagination Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-900">Tabel Master Tahun Ajaran</h3>
+            <span class="text-xs text-slate-500">Total: <strong>{{ total_ta }}</strong> Data</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                    <tr>
+                        <th class="px-6 py-3.5 text-center w-12">No</th>
+                        <th class="px-6 py-3.5">Nama Tahun Ajaran</th>
+                        <th class="px-6 py-3.5">Periode Mulai - Selesai</th>
+                        <th class="px-6 py-3.5">Semester Terdaftar</th>
+                        <th class="px-6 py-3.5 text-center">Jumlah Rombel</th>
+                        <th class="px-6 py-3.5 text-center">Status</th>
+                        <th class="px-6 py-3.5 text-center w-36">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for ta in page_obj %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="px-6 py-4 text-xs text-slate-400 font-mono text-center">
+                            {{ forloop.counter0|add:page_obj.start_index }}
+                        </td>
+                        <!-- Kolom Nama Tahun Ajaran (URL ke Halaman Detail) -->
+                        <td class="px-6 py-4 font-mono font-bold text-sm">
+                            <a href="{% url 'santri:tahun-ajaran-detail' ta.uuid %}" class="text-emerald-700 hover:text-emerald-900 hover:underline inline-flex items-center gap-1.5">
+                                {{ ta.nama }}
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
+                        </td>
+                        <!-- Periode Tanggal -->
+                        <td class="px-6 py-4 text-xs text-slate-600">
+                            <div class="font-medium text-slate-800">{{ ta.tanggal_mulai|date:"d M Y" }} s/d {{ ta.tanggal_selesai|date:"d M Y" }}</div>
+                            <span class="text-[10px] text-slate-400">Kalender Masehi</span>
+                        </td>
+                        <!-- Semester Terdaftar & Status Aktif Semester -->
+                        <td class="px-6 py-4 text-xs">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                {% for sem in ta.semester_list.all %}
+                                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[11px] {% if sem.is_active %}bg-emerald-50 border-emerald-300 text-emerald-800 font-bold{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+                                    <span>{{ sem.get_jenis_display }}</span>
+                                    {% if sem.is_active %}
+                                        <span class="text-[9px] bg-emerald-200 text-emerald-900 px-1 rounded">Aktif</span>
+                                    {% else %}
+                                        <form method="POST" action="{% url 'santri:semester-activate' sem.uuid %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-[10px] text-emerald-600 hover:text-emerald-800 underline font-medium ml-0.5" title="Aktifkan Semester ini">
+                                                Aktifkan
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                                {% empty %}
+                                <span class="text-xs italic text-slate-400">Belum ada</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <!-- Total Rombel (Link ke Daftar Rombel) -->
+                        <td class="px-6 py-4 text-center">
+                            <a href="{% url 'santri:rombel-list' %}?ta={{ ta.uuid }}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 transition" title="Lihat daftar rombel tahun ajaran ini">
+                                <span class="font-mono">{{ ta.rombel_list.count }}</span> Rombel
+                            </a>
+                        </td>
+                        <!-- Status Tahun Ajaran -->
+                        <td class="px-6 py-4 text-center">
+                            {% if ta.is_active %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Sedang Aktif
+                                </span>
+                            {% else %}
+                                <form method="POST" action="{% url 'santri:tahun-ajaran-activate' ta.uuid %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-600 transition">
+                                        Aktifkan TA
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                        <!-- Kolom Aksi Terakhir (Edit & Hapus) -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <a href="{% url 'santri:tahun-ajaran-edit' ta.uuid %}" class="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-slate-100 rounded-lg transition" title="Edit Tahun Ajaran">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </a>
+                                {% if not ta.is_active and ta.rombel_list.count == 0 %}
+                                <button type="button" @click="deleteModalOpen = true; deleteActionUrl = '{% url 'santri:tahun-ajaran-delete' ta.uuid %}'; deleteItemName = '{{ ta.nama }}'" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus Tahun Ajaran">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-400 text-xs">
+                            <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Belum ada master Tahun Ajaran yang sesuai kriteria pencarian.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex items-center justify-between bg-slate-50/60 px-6 py-4 border-t border-slate-100">
+            <span class="text-xs text-slate-500">
+                Menampilkan halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+            </span>
+            <div class="flex items-center gap-1.5">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition">
+                    &larr; Sebelumnya
+                </a>
+                {% endif %}
+
+                <span class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold font-mono">
+                    {{ page_obj.number }}
+                </span>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition">
+                    Berikutnya &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div x-show="deleteModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" @click.self="deleteModalOpen = false">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold mx-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div class="text-center space-y-1">
+                <h3 class="text-lg font-bold text-slate-900">Konfirmasi Hapus</h3>
+                <p class="text-xs text-slate-500">Apakah Anda yakin ingin menghapus Tahun Ajaran <strong x-text="deleteItemName" class="text-slate-800 font-mono"></strong>?</p>
+            </div>
+            <form :action="deleteActionUrl" method="POST" class="flex items-center gap-3 pt-2">
+                {% csrf_token %}
+                <button type="button" @click="deleteModalOpen = false" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    Batal
+                </button>
+                <button type="submit" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white shadow-sm transition">
+                    Hapus Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

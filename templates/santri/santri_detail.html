@@ -1,0 +1,430 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Profil Santri: {{ santri.nama_lengkap }} - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ activeTab: 'biodata' }">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <a href="{% url 'santri:santri-list' %}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Kembali ke Daftar Santri
+        </a>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'santri:santri-edit' santri.uuid %}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Data Santri
+            </a>
+        </div>
+    </div>
+
+    <!-- Header Card Profil Santri -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 sm:p-8">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center font-bold text-white text-3xl shadow-lg flex-shrink-0">
+                {{ santri.nama_lengkap|slice:":1"|upper }}
+            </div>
+            <div class="space-y-1 flex-1">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">{{ santri.nama_lengkap }}</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold 
+                        {% if santri.status == 'aktif' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                        {% elif santri.status == 'lulus' %}bg-blue-50 text-blue-700 border border-blue-200
+                        {% else %}bg-slate-100 text-slate-700{% endif %}">
+                        {{ santri.get_status_display }}
+                    </span>
+                </div>
+                <p class="text-sm text-slate-500 font-mono">NIS: <strong class="text-slate-800">{{ santri.nis }}</strong> {% if santri.nisn %} • NISN: {{ santri.nisn }}{% endif %}</p>
+                <p class="text-xs text-slate-500">
+                    Rombel Aktif: 
+                    {% with r=santri.rombel_aktif %}
+                        {% if r %}
+                            <a href="{% url 'santri:rombel-detail' r.uuid %}" class="font-semibold text-emerald-600 hover:underline">{{ r.nama }}</a>
+                        {% else %}
+                            <span class="italic text-slate-400">Belum ada</span>
+                        {% endif %}
+                    {% endwith %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-4 mt-8 border-b border-slate-100 text-sm font-semibold">
+            <button @click="activeTab = 'biodata'" 
+                    :class="activeTab === 'biodata' ? 'text-emerald-600 border-b-2 border-emerald-600 pb-3' : 'text-slate-500 hover:text-slate-800 pb-3'">
+                Biodata & Keluarga
+            </button>
+            <button @click="activeTab = 'rombel'" 
+                    :class="activeTab === 'rombel' ? 'text-emerald-600 border-b-2 border-emerald-600 pb-3' : 'text-slate-500 hover:text-slate-800 pb-3'">
+                Riwayat Rombel ({{ riwayat_rombel.count }})
+            </button>
+            <button @click="activeTab = 'keuangan'" 
+                    :class="activeTab === 'keuangan' ? 'text-emerald-600 border-b-2 border-emerald-600 pb-3' : 'text-slate-500 hover:text-slate-800 pb-3'">
+                Riwayat Tagihan & Pembayaran ({{ tagihan_list.count }})
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab 1: Biodata Lengkap -->
+    <div x-show="activeTab === 'biodata'" class="space-y-6">
+        <!-- 1. Data Identitas Pribadi & Alamat Santri -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Identitas Pribadi -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+                <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2.5 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    Identitas Pribadi Santri
+                </h3>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">NIK Santri</dt>
+                        <dd class="text-slate-800 font-mono font-medium mt-0.5">{{ santri.nik|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">No. Kartu Keluarga (KK)</dt>
+                        <dd class="text-slate-800 font-mono font-medium mt-0.5">{{ santri.no_kk|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Jenis Kelamin</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.get_jenis_kelamin_display }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Golongan Darah</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.golongan_darah }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Tempat, Tgl Lahir</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.tempat_lahir|default:"-" }}, {{ santri.tanggal_lahir|date:"d M Y"|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Urutan Anak</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">Anak ke-{{ santri.anak_ke }} dari {{ santri.jumlah_saudara }} bersaudara</dd>
+                    </div>
+                    <div class="col-span-2 pt-1 border-t border-slate-50">
+                        <dt class="font-semibold text-slate-400 uppercase">Riwayat Penyakit / Alergi</dt>
+                        <dd class="text-slate-700 font-medium mt-0.5">{{ santri.riwayat_penyakit|default:"Tidak ada catatan penyakit khusus." }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Alamat Domisili Santri -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+                <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2.5 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Alamat Domisili Asal Santri
+                </h3>
+                <dl class="space-y-2 text-xs">
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Alamat Jalan / Dusun</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5 leading-relaxed">{{ santri.alamat|default:"-" }}</dd>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-1">
+                        <div>
+                            <dt class="font-semibold text-slate-400 uppercase">Desa / Kelurahan</dt>
+                            <dd class="text-slate-800 font-medium mt-0.5">{{ santri.desa_kelurahan_santri|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-semibold text-slate-400 uppercase">Kecamatan</dt>
+                            <dd class="text-slate-800 font-medium mt-0.5">{{ santri.kecamatan_santri|default:"-" }}</dd>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                        <div>
+                            <dt class="font-semibold text-slate-400 uppercase">Kabupaten / Kota</dt>
+                            <dd class="text-slate-800 font-medium mt-0.5">{{ santri.kabupaten_kota_santri|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-semibold text-slate-400 uppercase">Provinsi</dt>
+                            <dd class="text-slate-800 font-medium mt-0.5">{{ santri.provinsi_santri|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-semibold text-slate-400 uppercase">Kode Pos</dt>
+                            <dd class="text-slate-800 font-mono font-medium mt-0.5">{{ santri.kode_pos_santri|default:"-" }}</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- 2. Data Ayah & Ibu Kandung -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Data Ayah -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+                <div class="border-b border-slate-100 pb-2.5 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        Data Ayah Kandung
+                    </h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if santri.status_ayah == 'hidup' %}bg-emerald-50 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+                        {{ santri.get_status_ayah_display }}
+                    </span>
+                </div>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Nama Ayah</dt>
+                        <dd class="text-slate-800 font-bold mt-0.5">{{ santri.nama_ayah|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">NIK Ayah</dt>
+                        <dd class="text-slate-800 font-mono font-medium mt-0.5">{{ santri.nik_ayah|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Pekerjaan</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.pekerjaan_ayah|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Penghasilan Bulanan</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.penghasilan_ayah|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Pendidikan Terakhir</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.pendidikan_ayah|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">No. WhatsApp / HP</dt>
+                        <dd class="text-slate-800 font-mono font-bold text-emerald-700 mt-0.5">{{ santri.telepon_ayah|default:"-" }}</dd>
+                    </div>
+                    <div class="col-span-2 pt-2 border-t border-slate-50">
+                        <dt class="font-semibold text-slate-400 uppercase">Alamat Ayah</dt>
+                        <dd class="text-slate-700 font-medium mt-0.5">
+                            {% if santri.alamat_ayah_sama %}
+                                <span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[11px] font-semibold">Sama dengan alamat santri</span>
+                            {% else %}
+                                {{ santri.get_alamat_ayah_lengkap }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Data Ibu -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+                <div class="border-b border-slate-100 pb-2.5 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        Data Ibu Kandung
+                    </h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if santri.status_ibu == 'hidup' %}bg-emerald-50 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+                        {{ santri.get_status_ibu_display }}
+                    </span>
+                </div>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Nama Ibu</dt>
+                        <dd class="text-slate-800 font-bold mt-0.5">{{ santri.nama_ibu|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">NIK Ibu</dt>
+                        <dd class="text-slate-800 font-mono font-medium mt-0.5">{{ santri.nik_ibu|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Pekerjaan</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.pekerjaan_ibu|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Penghasilan Bulanan</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.penghasilan_ibu|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">Pendidikan Terakhir</dt>
+                        <dd class="text-slate-800 font-medium mt-0.5">{{ santri.pendidikan_ibu|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-400 uppercase">No. WhatsApp / HP</dt>
+                        <dd class="text-slate-800 font-mono font-bold text-emerald-700 mt-0.5">{{ santri.telepon_ibu|default:"-" }}</dd>
+                    </div>
+                    <div class="col-span-2 pt-2 border-t border-slate-50">
+                        <dt class="font-semibold text-slate-400 uppercase">Alamat Ibu</dt>
+                        <dd class="text-slate-700 font-medium mt-0.5">
+                            {% if santri.alamat_ibu_sama %}
+                                <span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[11px] font-semibold">Sama dengan alamat santri</span>
+                            {% else %}
+                                {{ santri.get_alamat_ibu_lengkap }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- 3. Data Wali & Kontak Darurat Resmi -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+            <div class="border-b border-slate-100 pb-2.5 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Wali Santri & Penanggung Jawab Utama (Kontak Darurat Pesantren)
+                </h3>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Hubungan: {{ santri.get_hubungan_wali_display }}
+                </span>
+            </div>
+            <dl class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3 text-xs">
+                <div>
+                    <dt class="font-semibold text-slate-400 uppercase">Nama Penanggung Jawab / Wali</dt>
+                    <dd class="text-slate-900 font-bold text-sm mt-0.5">{{ santri.get_nama_wali_efektif }}</dd>
+                </div>
+                <div>
+                    <dt class="font-semibold text-slate-400 uppercase">No. WhatsApp / Kontak Darurat</dt>
+                    <dd class="text-emerald-700 font-bold font-mono text-sm mt-0.5">{{ santri.get_telepon_wali_efektif }}</dd>
+                </div>
+                <div>
+                    <dt class="font-semibold text-slate-400 uppercase">Pekerjaan Wali</dt>
+                    <dd class="text-slate-800 font-medium mt-0.5">{{ santri.pekerjaan_wali|default:"-" }}</dd>
+                </div>
+                <div class="sm:col-span-3 pt-2 border-t border-slate-50">
+                    <dt class="font-semibold text-slate-400 uppercase">Alamat Lengkap Wali</dt>
+                    <dd class="text-slate-700 font-medium mt-0.5 leading-relaxed">
+                        {{ santri.get_alamat_wali_lengkap }}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Tab 2: Riwayat Rombel -->
+    <div x-show="activeTab === 'rombel'" x-cloak class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div class="p-6 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-900">Riwayat Penempatan Kelas & Rombel</h3>
+        </div>
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                <tr>
+                    <th class="px-6 py-3">Tahun Ajaran</th>
+                    <th class="px-6 py-3">Rombel / Kelas</th>
+                    <th class="px-6 py-3">Wali Rombel</th>
+                    <th class="px-6 py-3 text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for ar in riwayat_rombel %}
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium">{{ ar.tahun_ajaran.nama }}</td>
+                    <td class="px-6 py-4 font-semibold text-emerald-700">
+                        <a href="{% url 'santri:rombel-detail' ar.rombel.uuid %}" class="hover:underline">
+                            {{ ar.rombel.nama }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-slate-600">{{ ar.rombel.wali_rombel.get_full_name|default:"-" }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize bg-slate-100 text-slate-700">
+                            {{ ar.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-8 text-center text-slate-400 text-xs">Belum ada riwayat penempatan rombel.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Tab 3: Riwayat Keuangan Cross-Linked -->
+    <div x-show="activeTab === 'keuangan'" x-cloak class="space-y-6">
+        <!-- Tagihan Santri -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Daftar Invoice Tagihan Santri</h3>
+                    <p class="text-xs text-slate-400">Klik nomor invoice untuk melihat rincian lengkap</p>
+                </div>
+            </div>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                    <tr>
+                        <th class="px-6 py-3">No. Invoice</th>
+                        <th class="px-6 py-3">Pos Tarif</th>
+                        <th class="px-6 py-3 text-right">Total Tagihan</th>
+                        <th class="px-6 py-3 text-right">Sisa Tagihan</th>
+                        <th class="px-6 py-3 text-center">Status</th>
+                        <th class="px-6 py-3 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for tagihan in tagihan_list %}
+                    <tr class="hover:bg-slate-50 transition">
+                        <!-- Link ke Detail Invoice -->
+                        <td class="px-6 py-4 font-mono font-semibold text-xs">
+                            <a href="{% url 'keuangan:tagihan-detail' tagihan.uuid %}" class="text-amber-700 hover:underline">
+                                {{ tagihan.nomor_invoice }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-xs font-medium">{{ tagihan.pos_tarif.nama }}</td>
+                        <td class="px-6 py-4 text-right font-medium">Rp {{ tagihan.total_tagihan|floatformat:0|intcomma }}</td>
+                        <td class="px-6 py-4 text-right font-bold {% if tagihan.sisa_tagihan == 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                            Rp {{ tagihan.sisa_tagihan|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize 
+                                {% if tagihan.status == 'lunas' %}bg-emerald-50 text-emerald-700
+                                {% elif tagihan.status == 'sebagian' %}bg-amber-50 text-amber-700
+                                {% else %}bg-rose-50 text-rose-700{% endif %}">
+                                {{ tagihan.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if tagihan.sisa_tagihan > 0 %}
+                                <a href="{% url 'keuangan:pembayaran-create' %}?tagihan={{ tagihan.uuid }}" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold transition">
+                                    Bayar
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-slate-400 text-xs">Belum ada tagihan untuk santri ini.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Riwayat Pembayaran Santri -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Riwayat Bukti Pembayaran</h3>
+                    <p class="text-xs text-slate-400">Klik nomor bukti kuitansi untuk melihat atau mencetak</p>
+                </div>
+            </div>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                    <tr>
+                        <th class="px-6 py-3">No. Bukti</th>
+                        <th class="px-6 py-3">Tanggal Bayar</th>
+                        <th class="px-6 py-3">Tagihan Terkait</th>
+                        <th class="px-6 py-3 text-right">Nominal</th>
+                        <th class="px-6 py-3">Metode</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for bayar in pembayaran_list %}
+                    <tr class="hover:bg-slate-50 transition">
+                        <!-- Link ke Detail Bukti Pembayaran -->
+                        <td class="px-6 py-4 font-mono font-semibold text-xs">
+                            <a href="{% url 'keuangan:pembayaran-detail' bayar.uuid %}" class="text-emerald-600 hover:underline">
+                                {{ bayar.nomor_bukti }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-xs text-slate-600">{{ bayar.tanggal_bayar|date:"d M Y, H:i" }}</td>
+                        <td class="px-6 py-4 text-xs">
+                            <a href="{% url 'keuangan:tagihan-detail' bayar.tagihan.uuid %}" class="font-mono text-amber-700 hover:underline">
+                                {{ bayar.tagihan.nomor_invoice }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-900">Rp {{ bayar.nominal|floatformat:0|intcomma }}</td>
+                        <td class="px-6 py-4 text-xs capitalize">{{ bayar.get_metode_pembayaran_display }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-slate-400 text-xs">Belum ada transaksi pembayaran.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

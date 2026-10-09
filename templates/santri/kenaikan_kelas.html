@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Kenaikan Kelas & Kelulusan - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{
+    tipeProses: 'kenaikan',
+    selectAll: true,
+    toggleAll(checked) {
+        document.querySelectorAll('.santri-checkbox').forEach(el => el.checked = checked);
+    }
+}">
+    <!-- Header -->
+    <div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Kenaikan Kelas & Kelulusan Santri</h2>
+        <p class="text-sm text-slate-500 mt-1">Kelola mutasi kenaikan rombel secara massal atau penetapan status kelulusan alumni.</p>
+    </div>
+
+    <!-- Step 1: Pilih Rombel Asal -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+            Pilih Rombel Asal
+        </h3>
+        <form method="GET" class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1">
+                <select name="rombel_asal" onchange="this.form.submit()" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <option value="">-- Pilih Rombel Asal --</option>
+                    {% for r in daftar_rombel %}
+                        <option value="{{ r.uuid }}" {% if selected_rombel_asal and selected_rombel_asal.uuid == r.uuid %}selected{% endif %}>
+                            {{ r.nama }} ({{ r.tahun_ajaran.nama }}) - Total Santri: {{ r.total_santri }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <noscript>
+                <button type="submit" class="px-5 py-2 bg-slate-800 text-white rounded-xl text-sm font-semibold">Tampilkan</button>
+            </noscript>
+        </form>
+    </div>
+
+    <!-- Step 2 & 3: Daftar Santri & Rombel Tujuan -->
+    {% if selected_rombel_asal %}
+    <form method="POST" class="space-y-6">
+        {% csrf_token %}
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center font-bold">2</span>
+                        Pilih Santri yang Naik Kelas / Lulus
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1">Centang santri yang berhak diproses.</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                    <label class="cursor-pointer flex items-center gap-2">
+                        <input type="checkbox" x-model="selectAll" @change="toggleAll($event.target.checked)" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        Pilih Semua
+                    </label>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                        <tr>
+                            <th class="px-6 py-3 w-12 text-center">Pilih</th>
+                            <th class="px-6 py-3">NIS</th>
+                            <th class="px-6 py-3">Nama Lengkap Santri</th>
+                            <th class="px-6 py-3">Jenis Kelamin</th>
+                            <th class="px-6 py-3">Wali Santri</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for ar in santri_anggota %}
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-6 py-4 text-center">
+                                <input type="checkbox" name="santri_ids" value="{{ ar.santri.id }}" checked class="santri-checkbox rounded text-emerald-600 focus:ring-emerald-500">
+                            </td>
+                            <td class="px-6 py-4 font-mono font-semibold text-xs text-slate-700">{{ ar.santri.nis }}</td>
+                            <td class="px-6 py-4 font-semibold text-slate-900">{{ ar.santri.nama_lengkap }}</td>
+                            <td class="px-6 py-4 text-xs text-slate-600">{{ ar.santri.jenis_kelamin }}</td>
+                            <td class="px-6 py-4 text-xs text-slate-600">{{ ar.santri.nama_ayah|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-400 text-xs">Tidak ada santri aktif di rombel ini.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Step 3: Tindakan / Rombel Tujuan -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center font-bold">3</span>
+                Tentukan Aksi Proses
+            </h3>
+
+            <!-- Radio Pilihan: Naik Kelas atau Kelulusan -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label class="p-4 rounded-xl border border-slate-200 cursor-pointer flex items-start gap-3 transition" 
+                       :class="tipeProses === 'kenaikan' ? 'border-emerald-500 bg-emerald-50/40 ring-1 ring-emerald-500' : 'hover:bg-slate-50'">
+                    <input type="radio" name="tipe_proses" value="kenaikan" x-model="tipeProses" class="mt-1 text-emerald-600 focus:ring-emerald-500">
+                    <div>
+                        <span class="text-sm font-bold text-slate-900 block">Kenaikan Kelas</span>
+                        <span class="text-xs text-slate-500 mt-0.5 block">Pindahkan santri ke rombel tujuan di tingkat yang lebih tinggi.</span>
+                    </div>
+                </label>
+
+                <label class="p-4 rounded-xl border border-slate-200 cursor-pointer flex items-start gap-3 transition"
+                       :class="tipeProses === 'kelulusan' ? 'border-emerald-500 bg-emerald-50/40 ring-1 ring-emerald-500' : 'hover:bg-slate-50'">
+                    <input type="radio" name="tipe_proses" value="kelulusan" x-model="tipeProses" class="mt-1 text-emerald-600 focus:ring-emerald-500">
+                    <div>
+                        <span class="text-sm font-bold text-slate-900 block">Kelulusan Santri (Alumni)</span>
+                        <span class="text-xs text-slate-500 mt-0.5 block">Tandai santri telah menuntaskan pendidikan dan ubah status ke Alumni.</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Dropdown Rombel Tujuan (Jika Kenaikan Kelas) -->
+            <div x-show="tipeProses === 'kenaikan'" class="space-y-2 pt-2">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Pilih Rombel Tujuan *</label>
+                <select name="rombel_tujuan_uuid" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    <option value="">-- Pilih Rombel Tujuan --</option>
+                    {% for r in daftar_rombel %}
+                        {% if selected_rombel_asal.uuid != r.uuid %}
+                            <option value="{{ r.uuid }}">{{ r.nama }} ({{ r.tahun_ajaran.nama }})</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Tombol Submit Eksekusi -->
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end">
+                <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Proses Kenaikan / Kelulusan Massal
+                </button>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{
+  "name": "siakad-pondok",
+  "version": "1.0.0",
+  "description": "Sistem Informasi Akademik & Keuangan Pondok Pesantren",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify",
+    "watch:css": "tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "tailwindcss": "^3.4.17"
+  }
+}

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Detail Pembayaran {{ pembayaran.nomor_bukti }} - SIAKAD Pesantren{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Breadcrumb & Nav -->
+    <div class="flex items-center justify-between no-print">
+        <a href="{% url 'keuangan:pembayaran-list' %}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Kembali ke Daftar Transaksi
+        </a>
+        <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold shadow-xs transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                Cetak Kuitansi
+            </button>
+            <a href="{% url 'keuangan:pembayaran-edit' pembayaran.uuid %}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Transaksi
+            </a>
+        </div>
+    </div>
+
+    <!-- Kuitansi Container Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-8 relative overflow-hidden">
+        <!-- Watermark decoration -->
+        <div class="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-emerald-50/50 flex items-center justify-center pointer-events-none">
+            <span class="text-8xl font-serif text-emerald-100 select-none">س</span>
+        </div>
+
+        <!-- Header Kuitansi -->
+        <div class="border-b border-slate-200 pb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-bold text-white text-2xl shadow-md">
+                    س
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">PONDOK PESANTREN SALAFIYAH</h1>
+                    <p class="text-xs text-slate-500 font-medium">KUITANSI BUKTI PEMBAYARAN RESMI</p>
+                </div>
+            </div>
+            <div class="text-left sm:text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
+                    {{ pembayaran.nomor_bukti }}
+                </span>
+                <p class="text-xs text-slate-400 mt-1">{{ pembayaran.tanggal_bayar|date:"l, d F Y - H:i" }} WIB</p>
+            </div>
+        </div>
+
+        <!-- Detail Rincian Transaksi -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 py-6 border-b border-slate-100">
+            <!-- Info Santri -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Diterima Dari (Santri):</span>
+                <div class="space-y-1">
+                    <a href="{% url 'santri:santri-detail' pembayaran.santri.uuid %}" class="text-base font-bold text-slate-900 hover:text-emerald-600 hover:underline block">
+                        {{ pembayaran.santri.nama_lengkap }}
+                    </a>
+                    <p class="text-xs text-slate-500 font-mono">NIS: <strong class="text-slate-700">{{ pembayaran.santri.nis }}</strong></p>
+                    <p class="text-xs text-slate-500">Wali / Ayah: {{ pembayaran.santri.nama_ayah|default:"-" }} ({{ pembayaran.santri.telepon_wali|default:"-" }})</p>
+                </div>
+            </div>
+
+            <!-- Info Tagihan Terkait -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Untuk Pembayaran:</span>
+                <div class="space-y-1">
+                    <p class="text-base font-bold text-slate-900">{{ pembayaran.tagihan.pos_tarif.nama }}</p>
+                    <p class="text-xs text-slate-500">
+                        Invoice: 
+                        <a href="{% url 'keuangan:tagihan-detail' pembayaran.tagihan.uuid %}" class="font-mono text-amber-700 hover:underline font-semibold">
+                            {{ pembayaran.tagihan.nomor_invoice }}
+                        </a>
+                    </p>
+                    <p class="text-xs text-slate-500">Tahun Ajaran: {{ pembayaran.tagihan.tahun_ajaran.nama }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Nominal Pembayaran -->
+        <div class="py-6 border-b border-slate-200">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-slate-400 text-xs font-semibold uppercase border-b border-slate-100">
+                        <th class="text-left pb-3">Deskripsi Tagihan</th>
+                        <th class="text-right pb-3">Total Tagihan</th>
+                        <th class="text-right pb-3">Nominal Dibayarkan</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <tr>
+                        <td class="py-4 font-medium text-slate-800">
+                            {{ pembayaran.tagihan.pos_tarif.nama }}
+                            {% if pembayaran.tagihan.bulan %}
+                                - Bulan ke-{{ pembayaran.tagihan.bulan }} / {{ pembayaran.tagihan.tahun }}
+                            {% endif %}
+                        </td>
+                        <td class="py-4 text-right text-slate-600 font-medium">
+                            Rp {{ pembayaran.tagihan.total_tagihan|floatformat:0|intcomma }}
+                        </td>
+                        <td class="py-4 text-right text-lg font-bold text-emerald-700">
+                            Rp {{ pembayaran.nominal|floatformat:0|intcomma }}
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="border-t border-slate-200 font-semibold text-slate-700">
+                        <td class="pt-4" colspan="2">Sisa Tagihan Saat Ini:</td>
+                        <td class="pt-4 text-right font-bold {% if pembayaran.tagihan.sisa_tagihan == 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                            Rp {{ pembayaran.tagihan.sisa_tagihan|floatformat:0|intcomma }}
+                            {% if pembayaran.tagihan.sisa_tagihan == 0 %}
+                                <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full ml-1 font-normal">LUNAS</span>
+                            {% else %}
+                                <span class="text-xs bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full ml-1 font-normal">BELUM LUNAS</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Catatan & Tanda Tangan -->
+        <div class="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+            <div class="space-y-2 text-xs text-slate-500">
+                <p><strong>Metode Bayar:</strong> {{ pembayaran.get_metode_pembayaran_display }}</p>
+                <p><strong>Petugas Kasir:</strong> {{ pembayaran.petugas.get_full_name|default:pembayaran.petugas.username|default:"Admin" }}</p>
+                {% if pembayaran.catatan %}
+                    <p><strong>Catatan:</strong> {{ pembayaran.catatan }}</p>
+                {% endif %}
+                <p class="text-[10px] text-slate-400 font-mono">Idempotency Key: {{ pembayaran.idempotency_key }}</p>
+            </div>
+
+            <div class="text-center md:text-right space-y-12">
+                <div>
+                    <p class="text-xs text-slate-500">Petugas Keuangan Pesantren,</p>
+                </div>
+                <div class="pt-6">
+                    <p class="text-sm font-bold text-slate-900 border-t border-slate-300 inline-block px-8 pt-1">
+                        {{ pembayaran.petugas.get_full_name|default:pembayaran.petugas.username|default:"Bagian Keuangan" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
